@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Basha Bari: demo v3</title>
+<style>
+:root{--bg:#f7f5f0;--surface:#fff;--ink:#1d1d1b;--muted:#6b6a64;--accent:#0f7a5a;--accent-ink:#fff;--line:#e4e1d8;--warn:#9a5b00;--ok:#1d6b3a;--mine:#e9f3ee}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#141513;--surface:#1f201d;--ink:#f1efe8;--muted:#a3a197;--accent:#3cc596;--accent-ink:#0b1f17;--line:#333430;--warn:#e0a040;--ok:#6fd49a;--mine:#23302a}}
+:root[data-theme="dark"]{--bg:#141513;--surface:#1f201d;--ink:#f1efe8;--muted:#a3a197;--accent:#3cc596;--accent-ink:#0b1f17;--line:#333430;--warn:#e0a040;--ok:#6fd49a;--mine:#23302a}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100%}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.logo{font-weight:800;font-size:20px;color:var(--accent)}
+main{max-width:940px;margin:0 auto;padding:18px}
+h1{font-size:24px;margin:6px 0}
+h2{font-size:17px;margin:14px 0 8px}
+.muted{color:var(--muted);font-size:14px}
+.notice{background:var(--surface);border:1px dashed var(--warn);color:var(--warn);padding:10px 12px;border-radius:10px;font-size:14px;margin:0 0 14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;align-items:center}
+input,select,textarea{font:inherit;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-height:46px;flex:1 1 160px}
+textarea{width:100%;min-height:80px}
+.btn{font:inherit;font-weight:700;padding:12px 18px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);cursor:pointer;min-height:44px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.small{min-height:36px;padding:7px 12px;font-size:14px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;max-width:520px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.photo{height:120px;display:grid;place-items:center;font-size:48px;background:var(--line)}
+.body{padding:12px 14px}
+.price{font-size:18px;font-weight:800}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.badge{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--ok);color:var(--ok)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.checks{list-style:none;padding:0;margin:10px 0}
+.checks li{padding:8px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}
+.item{padding:10px 0;border-top:1px solid var(--line)}
+.hidden{display:none!important}
+.err{color:var(--warn);font-size:14px;min-height:1.2em}
+.ok{color:var(--ok);font-weight:700}
+.msgs{max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.msg{padding:8px 12px;border-radius:12px;max-width:80%;background:var(--line)}
+.msg.me{align-self:flex-end;background:var(--mine)}
+dialog{border:0;border-radius:16px;padding:0;width:min(540px,94vw);background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.dlg{padding:20px}
+.fld{display:flex;flex-direction:column;gap:4px;flex:0 1 240px;max-width:100%;font-size:14px}
+.fld>input,.fld>select,.fld>textarea{flex:none;width:100%}
+.fld>span{font-weight:500}
+.req{color:#c0392b;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" data-act="nav" data-v="landing" style="cursor:pointer">Basha Bari</div>
+  <div id="top" class="row" style="margin:0;gap:8px"></div>
+</header>
+<main>
+  <div class="notice" id="demo-note"></div>
+  <div id="app"></div>
+</main>
+<datalist id="areas"><option>Mirpur</option><option>Uttara</option><option>Dhanmondi</option><option>Bashundhara R/A</option><option>Mohammadpur</option><option>Gulshan</option><option>Badda</option></datalist>
+<dialog id="dlg"><div class="dlg" id="dlg-body"></div></dialog>
+
+<script>
+const T={
+en:{lang:'English',tagline:'Your next home in Dhaka, hassle free.',search:'Search by area or neighbourhood',rentCta:'Have a home to rent out? Post it here.',browse:'Browse homes',rentOut:'Rent out',login:'Log in',signup:'Sign up',logout:'Log out',
+ area:'Area',budget:'Max budget',beds:'Bedrooms',any:'Any',call:'Call',book:'Book viewing',chat:'Chat',send:'Send',cancel:'Cancel',
+ name:'Full name',phone:'Mobile number (01XXXXXXXXX)',pass:'Password (6+ characters)',dob:'Date of birth',
+ signupNote:'You must be 18 or older. Every user verifies their phone and identity before contacting landlords, booking viewings or listing homes.',
+ under18:'You must be 18 or older to use Basha Bari.',phoneTaken:'This number already has an account.',badLogin:'Wrong number or password.',
+ otp:'Enter the 4-digit code sent to your phone (demo code: 1234)',verifyPhone:'Verify phone',
+ idTitle:'Verify your identity',nid:'NID number (demo: checked, not stored)',face:'Face check (demo)',faceOK:'Face matched ✓',finish:'Finish verification',
+ checkPhone:'Phone verified',checkId:'Identity and age verified',checkFace:'Face matched',
+ needLogin:'Please log in first.',needVerify:'Finish verification to do this.',
+ rentTitle:'Rent out a home',title:'Listing title',rentLbl:'Monthly rent (৳)',bedrooms:'Bedrooms',desc:'Facilities, floor, road, nearby transport',
+ postListing:'Submit for review',pending:'Pending review',approveDemo:'Demo: approve',submitted:'Submitted. Your listing goes live after review.',
+ myListings:'Your listings',none:'No homes match. Try another budget or area.',ownerPhone:'Call',
+ bookTitle:'Book a viewing',date:'Date',time:'Time',sent:'Viewing request sent to the landlord (demo).',
+ chatTitle:'Chat with the landlord',typeMsg:'Type a message',demoReply:'Thanks for your message. The landlord will reply soon. (Demo)',
+ verifiedBadge:'Verified',err18:'Please enter a valid date of birth.'},
+bn:{lang:'বাংলা',tagline:'ঝামেলা ছাড়াই ঢাকায় আপনার নতুন বাসা।',search:'এলাকা বা মহল্লা দিয়ে খুঁজুন',rentCta:'বাসা ভাড়া দিতে চান? এখানে পোস্ট করুন।',browse:'বাসা খুঁজুন',rentOut:'ভাড়া দিন',login:'লগ ইন',signup:'সাইন আপ',logout:'লগ আউট',
+ area:'এলাকা',budget:'সর্বোচ্চ বাজেট',beds:'শয়নকক্ষ',any:'যেকোনো',call:'কল করুন',book:'দেখার সময় বুক করুন',chat:'চ্যাট',send:'পাঠান',cancel:'বাতিল',
+ name:'পুরো নাম',phone:'মোবাইল নম্বর (01XXXXXXXXX)',pass:'পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)',dob:'জন্ম তারিখ',
+ signupNote:'আপনার বয়স কমপক্ষে ১৮ হতে হবে। মালিকের সঙ্গে যোগাযোগ, বাসা দেখা বা তালিকা দেওয়ার আগে প্রতিটি ব্যবহারকারীকে ফোন ও পরিচয় যাচাই করতে হবে।',
+ under18:'বাসাবাড়ি ব্যবহার করতে আপনার বয়স কমপক্ষে ১৮ হতে হবে।',phoneTaken:'এই নম্বরে আগেই অ্যাকাউন্ট আছে।',badLogin:'ভুল নম্বর বা পাসওয়ার্ড।',
+ otp:'ফোনে পাঠানো ৪ সংখ্যার কোড দিন (ডেমো কোড: 1234)',verifyPhone:'ফোন যাচাই করুন',
+ idTitle:'পরিচয় যাচাই করুন',nid:'এনআইডি নম্বর (ডেমো: যাচাই হবে, সংরক্ষিত হবে না)',face:'মুখ যাচাই (ডেমো)',faceOK:'মুখ মিলেছে ✓',finish:'যাচাই সম্পন্ন করুন',
+ checkPhone:'ফোন যাচাইকৃত',checkId:'পরিচয় ও বয়স যাচাইকৃত',checkFace:'মুখ মিলেছে',
+ needLogin:'আগে লগ ইন করুন।',needVerify:'এটি করতে যাচাই সম্পন্ন করুন।',
+ rentTitle:'বাসা ভাড়া দিন',title:'তালিকার শিরোনাম',rentLbl:'মাসিক ভাড়া (৳)',bedrooms:'শয়নকক্ষ',desc:'সুবিধা, তলা, রাস্তা, যাতায়াত',
+ postListing:'পর্যালোচনার জন্য জমা দিন',pending:'যাচাই অপেক্ষমাণ',approveDemo:'ডেমো: অনুমোদন',submitted:'জমা হয়েছে। পর্যালোচনার পর তালিকা প্রকাশ হবে।',
+ myListings:'আপনার তালিকা',none:'কোনো বাসা মেলেনি। বাজেট বা এলাকা বদলান।',ownerPhone:'কল',
+ bookTitle:'দেখার সময় বুক করুন',date:'তারিখ',time:'সময়',sent:'মালিকের কাছে অনুরোধ পাঠানো হয়েছে (ডেমো)।',
+ chatTitle:'মালিকের সঙ্গে চ্যাট',typeMsg:'বার্তা লিখুন',demoReply:'বার্তার জন্য ধন্যবাদ। মালিক শীঘ্রই উত্তর দেবেন। (ডেমো)',
+ verifiedBadge:'যাচাইকৃত',err18:'সঠিক জন্ম তারিখ দিন।'}
+};
+const t=k=>(T[S.lang]&&T[S.lang][k])||T.en[k]||k;
+const CT={
+en:{callBtn:`Call`,anytime:`Calls anytime`,busy:`Not taking calls today`,outside:`Calls not available now`,schedOn:`Set when people can call`,from:`From`,until:`Until`,busyOn:`I'm busy today`,busyOff:`Resume calls`,connecting:`Connecting through Basha Bari (demo). Neither number is shown to the other person.`,hangup:`End call`,closed:`This landlord cannot be called right now.`,ok:`OK`,privacy:`The call stays inside Basha Bari. The landlord's number stays private.`,dayNames:{Sat:`Sat`,Sun:`Sun`,Mon:`Mon`,Tue:`Tue`,Wed:`Wed`,Thu:`Thu`,Fri:`Fri`}},
+bn:{callBtn:`কল করুন`,anytime:`যেকোনো সময় কল করা যাবে`,busy:`আজ কল নেওয়া হচ্ছে না`,outside:`এখন কল করা যাবে না`,schedOn:`কখন কল করা যাবে তা ঠিক করুন`,from:`শুরু`,until:`শেষ`,busyOn:`আজ ব্যস্ত আছি`,busyOff:`কল নেওয়া শুরু করুন`,connecting:`বাসাবাড়ি-এর মাধ্যমে সংযোগ হচ্ছে (ডেমো)। কোনো পক্ষের নম্বরই অন্যজনকে দেখানো হয় না।`,hangup:`কল শেষ করুন`,closed:`এই মালিককে এখন কল করা যাবে না।`,ok:`ঠিক আছে`,privacy:`কল বাসাবাড়ি-এর ভেতরে হয়। মালিকের নম্বর গোপন থাকে।`,dayNames:{Sat:`শনি`,Sun:`রবি`,Mon:`সোম`,Tue:`মঙ্গল`,Wed:`বুধ`,Thu:`বৃহ`,Fri:`শুক্র`}}
+};
+const ct=k=>(CT[S.lang]||CT.en)[k]||CT.en[k]||k;
+const DAYS=['Sat','Sun','Mon','Tue','Wed','Thu','Fri'];
+const dn=x=>(CT[S.lang]||CT.en).dayNames[x]||x;
+const bd=s=>S.lang==='bn'?String(s).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]):String(s);
+const callOf=l=>l.call||{enabled:false,from:'09:00',to:'18:00',days:[],busy:false};
+function dhakaNow(){const p={};new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dhaka',hour:'2-digit',minute:'2-digit',hour12:false,weekday:'short'}).formatToParts(new Date()).forEach(x=>p[x.type]=x.value);return {day:p.weekday,min:(Number(p.hour)%24)*60+Number(p.minute)};}
+function callStatus(l){
+  const c=callOf(l);
+  if(c.busy) return {ok:false,text:ct('busy')};
+  if(!c.enabled) return {ok:true,text:ct('anytime')};
+  const now=dhakaNow();
+  const m=s=>{const [h,mi]=s.split(':').map(Number);return h*60+mi;};
+  const ok=c.days.includes(now.day)&&now.min>=m(c.from)&&now.min<m(c.to);
+  const line=bd(c.from)+'–'+bd(c.to)+' · '+c.days.map(dn).join(', ');
+  return {ok,text:ok?line:line+' · '+ct('outside')};
+}
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=n=>{const s=Number(n).toLocaleString('en-US');return S.lang==='bn'?s.replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]):s;};
+const fmt=n=>'৳'+num(n);
+const PH=/^01[3-9]\d{8}$/, NID=/^\d{10}(\d{3}|\d{7})?$/;
+
+const seed=[
+ {id:1,title:'2-bedroom flat',area:'Mirpur',rent:18000,beds:2,img:'🏢',phone:'01700000001',desc:'South-facing, 3rd floor, lift, generator backup.',live:true},
+ {id:2,title:'Family flat',area:'Uttara',rent:28000,beds:3,img:'🏠',phone:'01700000002',desc:'Quiet road, parking space, water tank on roof.',live:true},
+ {id:3,title:'Studio room',area:'Dhanmondi',rent:12000,beds:1,img:'🛏️',phone:'01700000003',desc:'Good for students, 5 minutes to the main road.',live:true},
+ {id:4,title:'3-bedroom flat',area:'Bashundhara R/A',rent:35000,beds:3,img:'🏢',phone:'01700000004',desc:'Gated community, CCTV in common areas.',live:true},
+ {id:5,title:'2-bedroom flat',area:'Mohammadpur',rent:16000,beds:2,img:'🏠',phone:'01700000005',desc:'Ground floor, near bus routes.',live:true}
+];
+
+const S={lang:'en',page:'landing',view:'list',mapSel:null,user:null,users:[],draft:null,ret:null,mine:[],
+  filter:{area:'',max:'',beds:''},bookings:[],chats:{},chatId:null,dlgId:null};
+
+function visibleListings(){
+  return [...seed,...S.mine.filter(l=>l.live)].filter(l=>
+    (!S.filter.area||l.area.toLowerCase().includes(S.filter.area.toLowerCase()))&&
+    (!S.filter.max||l.rent<=Number(S.filter.max))&&
+    (!S.filter.beds||l.beds>=Number(S.filter.beds)));
+}
+
+function cardHTML(l){
+  const v=S.user&&S.user.verified;
+  return `<article class="card"><div class="photo" data-act="detail" data-id="${l.id}" style="cursor:pointer">${l.img}</div><div class="body">
+    <div class="price">${fmt(l.rent)}<span class="muted">/${S.lang==='bn'?'মাস':'month'}</span></div>
+    <div>${esc(l.title)} · ${esc(l.area)}</div>
+    <div class="muted">${num(l.beds)} ${t('beds').toLowerCase()}</div>
+    <div class="muted">${esc(propLine(l))}</div>
+    <div class="badges"><span class="badge">${t('verifiedBadge')}</span></div>
+    <div class="actions">
+      <div class="muted" style="width:100%">${esc(callStatus(l).text)}</div><button class="btn small ghost" data-act="gate" data-kind="call" data-id="${l.id}">${ct('callBtn')}</button>
+      <button class="btn small" data-act="gate" data-kind="book" data-id="${l.id}">${t('book')}</button>
+      <button class="btn small ghost" data-act="gate" data-kind="chat" data-id="${l.id}">${t('chat')}</button>
+      <button class="btn small ghost" data-act="detail" data-id="${l.id}">${S.lang==='bn'?'বিস্তারিত':'Details'}</button>
+    </div></div></article>`;
+}
+
+function browseHTML(){
+  return `<h1>${t('browse')}</h1>
+   <div class="panel" style="max-width:none;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>${t('rentCta')}</span><button class="btn small" data-act="rent">${t('rentOut')}</button></div>
+   <div class="row">
+     <input id="f-area" list="areas" placeholder="${t('search')}" value="${esc(S.filter.area)}" aria-label="${t('area')}">
+     <select id="f-max" aria-label="${t('budget')}">
+       <option value="">${t('budget')}: ${t('any')}</option>
+       <option value="15000" ${S.filter.max==='15000'?'selected':''}>≤ ${fmt(15000)}</option>
+       <option value="25000" ${S.filter.max==='25000'?'selected':''}>≤ ${fmt(25000)}</option>
+       <option value="40000" ${S.filter.max==='40000'?'selected':''}>≤ ${fmt(40000)}</option>
+     </select>
+     <select id="f-beds" aria-label="${t('beds')}">
+       <option value="">${t('beds')}: ${t('any')}</option>
+       ${[1,2,3].map(n=>`<option value="${n}" ${S.filter.beds==n?'selected':''}>${num(n)}+</option>`).join('')}
+     </select>
+   </div>
+   <div id="grid" class="grid">${gridHTML()}</div>`;
+}
+function gridHTML(){
+  const items=visibleListings();
+  return items.map(cardHTML).join('')||`<p class="muted">${t('none')}</p>`;
+}
+
+function landingHTML(){
+  const bn=S.lang==='bn';
+  const cards=bn?[
+    ['বিনামূল্যে','বাড়ি ভাড়া দেওয়া ও খোঁজা, দুটোই বিনামূল্যে।'],
+    ['যাচাইকৃত মানুষ','ফোন, বয়স ও পরিচয় যাচাই ছাড়া কেউ যোগাযোগ বা বুকিং করতে পারে না।'],
+    ['সঠিক সময়ে কল','মালিক নিজে ঠিক করেন কখন কল নেবেন।']
+  ]:[
+    ['Free to use','Listing a home and searching for one are both free.'],
+    ['Verified people','Nobody can contact, book or list without phone, age and identity checks.'],
+    ['Calls at the right time','Landlords choose when they take calls.']
+  ];
+  return `<section style="text-align:center;padding:48px 8px 36px">
+    <div style="font-size:clamp(52px,13vw,104px);font-weight:800;color:var(--accent);line-height:1">${S.lang==='bn'?'বাসাবাড়ি':'Basha Bari'}</div>
+    <p style="font-size:20px;margin:14px 0 28px">${t('tagline')}</p>
+    <div class="row" style="justify-content:center;gap:14px">
+      <button class="btn" style="min-width:230px;min-height:58px;font-size:18px" data-act="nav" data-v="browse">${bn?'বাসা খুঁজছি':'Looking for a house'}</button>
+      <button class="btn ghost" style="min-width:230px;min-height:58px;font-size:18px" data-act="rent">${bn?'আমি বাসা ভাড়া দিতে চাই':'I want to rent out a house'}</button>
+    </div>
+    <p class="muted" style="margin-top:16px">${bn?'আমাদের সম্পর্কে জানতে নিচে স্ক্রল করুন ↓':'Scroll down to learn about us ↓'}</p>
+  </section>
+  <section style="max-width:760px;margin:0 auto;padding:28px 8px">
+    <h2 style="font-size:24px">${bn?'আমাদের সম্পর্কে':'About us'}</h2>
+    <p>${bn?'বাসাবাড়ি ঢাকার মানুষকে পোস্টার না লাগিয়ে, দরজায় দরজায় না ঘুরে বাসা খুঁজতে এবং দেখার সময় ঠিক করতে সাহায্য করে। মালিকরা বিনামূল্যে বাসা তালিকাভুক্ত করেন। ভাড়াটিয়ারা এলাকা, বাজেট ও শয়নকক্ষ দিয়ে খোঁজেন, তারপর দেখার অনুরোধ পাঠান বা মালিকের ঠিক করা সময়ে কল করেন।':'Basha Bari helps people in Dhaka find a home and arrange a viewing without posters or walking from door to door. Landlords list their homes for free. Renters search by area, budget and bedrooms, then request a viewing or call during the hours the landlord has chosen.'}</p>
+    <p>${bn?'সবাইকে ফোন, বয়স (১৮ বছরের বেশি) ও পরিচয় যাচাই করতে হয়। আমরা ভাড়া, জামানত বা বুকিংয়ের টাকা নিই না। এই বিষয়গুলো ভাড়াটিয়া ও মালিকের মধ্যে সরাসরি ঠিক হয়।':'Everyone verifies their phone, age (over 18) and identity before using contact features. We do not take rent, deposits or booking payments. Those arrangements are made directly between the renter and the landlord.'}</p>
+  </section>
+  <section style="max-width:920px;margin:0 auto;padding:8px">
+    <div class="grid">${cards.map(c=>`<div class="panel" style="max-width:none"><h2>${c[0]}</h2><p class="muted">${c[1]}</p></div>`).join('')}</div>
+  </section>`;
+}
+function dl(en,bn){return S.lang==='bn'?bn:en;}
+function detailHTML(){
+  const l=findListing(S.selId); if(!l) return '';
+  const back=`<button class="btn small ghost" data-act="nav" data-v="browse">${dl('← Back','ফিরে যান')}</button>`;
+  const head=`${back}<div class="panel" style="margin-top:12px;max-width:none"><div class="photo" style="font-size:64px">${l.img}</div>
+    <h1>${esc(l.title)}</h1><p class="muted">${esc(l.area)}</p><div class="price">${fmt(l.rent)}<span class="muted">/${dl('month','মাস')}</span></div><div class="row"><button class="btn small ghost" data-act="viewmap" data-id="${l.id}">${ft('viewMap')}</button></div>`;
+  if(!S.user) return head+`<p>${dl('Sign in to see the full address, photos, service charge and bills.','পূর্ণ ঠিকানা, ছবি, সার্ভিস চার্জ ও বিল দেখতে সাইন ইন করুন।')}</p>
+    <div class="row"><button class="btn" data-act="detailauth" data-v="login">${t('login')}</button><button class="btn ghost" data-act="detailauth" data-v="signup">${t('signup')}</button></div></div>`;
+  const svc=l.service&&l.service.on?`${fmt(l.service.amount)}${l.service.benefit?' · '+esc(l.service.benefit):''}`:dl('None','নেই');
+  const rows=[
+    [dl('Address','ঠিকানা'), esc(l.address||'—')],
+    [dl('Home type','বাসার ধরন'), l.type?ft(l.type):'—'],
+    [dl('Rooms and bills','কক্ষ ও বিল'), propLine(l)||'—'],
+    [dl('Service charge','সার্ভিস চার্জ'), svc],
+    [dl('Photos','ছবি'), dl((l.photoCount||0)+' added (demo)', num(l.photoCount||0)+'টি যোগ হয়েছে (ডেমো)')],
+    [dl('Description','বিবরণ'), esc(l.desc||'—')]
+  ];
+  return `${head}${rows.map(r=>`<div class="item"><strong>${r[0]}</strong><div>${r[1]}</div></div>`).join('')}
+    <div class="actions" style="margin-top:14px">
+      <button class="btn small ghost" data-act="gate" data-kind="call" data-id="${l.id}">${ct('callBtn')}</button>
+      <button class="btn small" data-act="gate" data-kind="book" data-id="${l.id}">${t('book')}</button>
+      <button class="btn small ghost" data-act="gate" data-kind="chat" data-id="${l.id}">${t('chat')}</button>
+    </div></div>`;
+}
+function authHTML(mode){
+  if(mode==='login') return `<div class="panel"><h1>${t('login')}</h1>
+    <form data-form="login">
+      <div class="row"><input name="phone" type="tel" placeholder="${t('phone')}" required></div>
+      <div class="row"><input name="pass" type="password" placeholder="${t('pass')}" required></div>
+      <div class="err" id="err"></div>
+      <div class="row"><button class="btn" type="submit">${t('login')}</button><button class="btn ghost" type="button" data-act="nav" data-v="signup">${t('signup')}</button></div>
+    </form></div>`;
+  return `<div class="panel"><h1>${t('signup')}</h1><p class="muted">${t('signupNote')}</p>
+    <form data-form="signup">
+      <div class="row"><input name="name" placeholder="${t('name')}" required></div>
+      <div class="row"><input name="phone" type="tel" placeholder="${t('phone')}" required></div>
+      <div class="row"><label class="fld"><span>${t('dob')} <span class="req">*</span></span><input name="dob" type="date" required></label></div>
+      <p class="muted" style="font-size:13px;margin:0">${S.lang==='bn'?'আপনার বয়স ১৮ বছরের বেশি হতে হবে।':'You must be over 18 to use Basha Bari.'}</p>
+      <div class="row"><input name="pass" type="password" minlength="6" placeholder="${t('pass')}" required></div>
+      <div class="err" id="err"></div>
+      <div class="row"><button class="btn" type="submit">${t('signup')}</button><button class="btn ghost" type="button" data-act="nav" data-v="login">${t('login')}</button></div>
+    </form></div>`;
+}
+
+function verifyHTML(){
+  const u=S.user;
+  const list=`<ul class="checks">
+     <li><span>${t('checkPhone')}</span><span>${u.phoneOK?'✓':'–'}</span></li>
+     <li><span>${t('checkId')}</span><span>${u.idOK?'✓':'–'}</span></li>
+     <li><span>${t('checkFace')}</span><span>${u.faceOK?'✓':'–'}</span></li></ul>`;
+  if(!u.phoneOK) return `<div class="panel"><h1>${t('verifyPhone')}</h1><p class="muted">${t('otp')}</p>
+     <form data-form="otp"><div class="row"><input name="code" inputmode="numeric" maxlength="4" placeholder="····" required></div>
+     <div class="err" id="err"></div><div class="row"><button class="btn" type="submit">${t('verifyPhone')}</button></div></form>${list}</div>`;
+  return `<div class="panel"><h1>${t('idTitle')}</h1>
+     ${u.nidOK?`<form data-form="idcheck">
+       <div class="row"><button class="btn ghost" type="button" data-act="face">${t('face')}</button><span class="${u.faceOK?'ok':'muted'}" id="face-s">${u.faceOK?t('faceOK'):''}</span></div>
+       <div class="err" id="err"></div>
+       <div class="row"><button class="btn" type="submit">${t('finish')}</button></div>
+     </form>`:`<form data-form="nid">
+       <div class="row"><input name="nid" inputmode="numeric" placeholder="${t('nid')}" required></div>
+       <div class="err" id="err"></div>
+       <div class="row"><button class="btn" type="submit">${S.lang==='bn'?'পরবর্তী':'Next'}</button></div>
+     </form>`}${list}</div>`;
+}
+
+const FT={
+en:{type:'Property type',apartment:'Apartment (flat)',house:'House',rooms:'Rooms',bedrooms:'Bedrooms',washrooms:'Washrooms',balconies:'Balconies',photo:'Photos',photosNote:'Tap a room below and add one picture for every room. Tap Camera to take one, or Gallery to pick one from your phone.',kitchen:'Kitchen',living:'Living room',dining:'Dining room',bedroomN:'Bedroom',washroomN:'Washroom',balconyN:'Balcony',added:'Added (demo, not uploaded)',addPhoto:'Not added yet',camera:'Camera',gallery:'Gallery',details:'Listing details',address:'House rent address (full address)',serviceQ:'Service charge?',service:'Service charge',yes:'Yes',no:'No',serviceAmt:'Service charge per month (BDT)',serviceBenefit:'What the service charge covers (e.g. security, lift, generator, cleaning)',bills:'Water and gas bills',water:'Water bill',gas:'Gas bill',gasType:'Gas connection',cylinder:'Cylinder gas',pipeline:'Pipeline gas',excluded:'Not included (tenant pays)',included:'Included',where:'Where is the included bill counted?',inService:'In service charge',inRent:'In house rent',choose:'Choose...',days:'Days',allRequired:'Everything on this form is required.',legend:'* = required',errChoose:'Please answer every question marked *',errWhere:'Choose where each included bill is counted',errPhotos:'Please add a photo for',errRent:'Enter a rent of at least 1000',errDays:'Choose at least one day for calls',submit:'Post listing',callSched:'When people can call',callAny:'Anytime',callHours:'Set hours'},
+bn:{type:'বাসার ধরন',apartment:'ফ্ল্যাট (অ্যাপার্টমেন্ট)',house:'বাড়ি',rooms:'কক্ষ',bedrooms:'বেডরুম',washrooms:'বাথরুম',balconies:'বারান্দা',photo:'ছবি',photosNote:'নিচের একটি কক্ষে চাপুন, তারপর প্রতিটি কক্ষের একটি করে ছবি দিন। ক্যামেরা বা গ্যালারি চাপুন।',kitchen:'কিচেন',living:'লিভিং রুম',dining:'ডাইনিং রুম',bedroomN:'বেডরুম',washroomN:'বাথরুম',balconyN:'বারান্দা',added:'ছবি যোগ হয়েছে (ডেমো, আপলোড হয়নি)',addPhoto:'এখনো যোগ হয়নি',camera:'ক্যামেরা',gallery:'গ্যালারি',details:'তালিকার বিবরণ',address:'বাড়ি ভাড়ার পূর্ণ ঠিকানা',serviceQ:'সার্ভিস চার্জ আছে?',service:'সার্ভিস চার্জ',yes:'হ্যাঁ',no:'না',serviceAmt:'মাসিক সার্ভিস চার্জ (টাকা)',serviceBenefit:'সার্ভিস চার্জে কী কী পাওয়া যাবে (যেমন: নিরাপত্তা, লিফট, জেনারেটর, পরিচ্ছন্নতা)',bills:'পানি ও গ্যাসের বিল',water:'পানির বিল',gas:'গ্যাসের বিল',gasType:'গ্যাসের সংযোগ',cylinder:'সিলিন্ডার গ্যাস',pipeline:'পাইপলাইন গ্যাস',excluded:'অন্তর্ভুক্ত নয় (ভাড়াটিয়া দেবেন)',included:'অন্তর্ভুক্ত',where:'অন্তর্ভুক্ত বিলটি কোথায় ধরা হবে?',inService:'সার্ভিস চার্জে',inRent:'বাড়ি ভাড়ার মধ্যে',choose:'বেছে নিন...',days:'দিন',allRequired:'এই ফর্মের সব তথ্য আবশ্যক।',legend:'* = আবশ্যক',errChoose:'* চিহ্নযুক্ত প্রতিটি প্রশ্নের উত্তর দিন',errWhere:'অন্তর্ভুক্ত প্রতিটি বিল কোথায় ধরা হবে বেছে নিন',errPhotos:'এইগুলোর ছবি দিন',errRent:'কমপক্ষে ১০০০ টাকা ভাড়া লিখুন',errDays:'কল করার জন্য অন্তত একটি দিন বেছে নিন',submit:'তালিকা পোস্ট করুন',callSched:'কখন কল করা যাবে',callAny:'যেকোনো সময়',callHours:'সময় ঠিক করুন'}
+};
+Object.assign(FT.en,{isOwner:'Is this property yours?',relation:'Your relationship to the owner',errRelation:'Choose your relationship to the owner',r_father:'Father',r_mother:'Mother',r_brother:'Brother',r_sister:'Sister',r_husband:'Husband',r_wife:'Wife',r_son:'Son',r_daughter:'Daughter',r_relative:'Other relative',r_friend:'Friend',r_caretaker:'Caretaker or agent',r_other:'Other'});
+Object.assign(FT.bn,{isOwner:'এই বাড়িটি কি আপনার?',relation:'মালিকের সঙ্গে আপনার সম্পর্ক কী?',errRelation:'মালিকের সঙ্গে সম্পর্ক বেছে নিন',r_father:'বাবা',r_mother:'মা',r_brother:'ভাই',r_sister:'বোন',r_husband:'স্বামী',r_wife:'স্ত্রী',r_son:'ছেলে',r_daughter:'মেয়ে',r_relative:'অন্য আত্মীয়',r_friend:'বন্ধু',r_caretaker:'কেয়ারটেকার বা প্রতিনিধি',r_other:'অন্যান্য'});
+Object.assign(FT.en,{location:'Location on the map',pubNote:'Renters see only an approximate spot, never your exact pin or phone number.',tapMap:'Tap the map to place your pin, or search an area above.',searchArea:'Search an area, e.g. Mirpur',pinNear:'Pinned near',errLoc:'Place your pin on the map',viewMap:'View on map',listView:'List',mapView:'Map',openListing:'Open listing',changeLoc:'Change location',saveLoc:'Save location',approxLoc:'Approximate location'});
+Object.assign(FT.bn,{location:'মানচিত্রে অবস্থান',pubNote:'ভাড়াটিয়ারা শুধু আনুমানিক স্থান দেখবেন, আপনার সঠিক পিন বা ফোন নম্বর নয়।',tapMap:'মানচিত্রে চাপ দিয়ে পিন বসান, অথবা উপরে এলাকা খুঁজুন।',searchArea:'এলাকা খুঁজুন, যেমন: মিরপুর',pinNear:'পিন দেওয়া হয়েছে কাছে',errLoc:'মানচিত্রে পিন বসান',viewMap:'মানচিত্রে দেখুন',listView:'তালিকা',mapView:'মানচিত্র',openListing:'তালিকা খুলুন',changeLoc:'স্থান বদলান',saveLoc:'স্থান সংরক্ষণ করুন',approxLoc:'আনুমানিক স্থান'});
+const ft=k=>(FT[S.lang]||FT.en)[k]||FT.en[k]||k;
+function lfDefault(){return {type:'apartment',beds:2,baths:1,balconies:0,photos:{},open:false,service:'',water:'',waterWhere:'',gas:'',gasWhere:'',gasType:'',isOwner:'',relation:'',pin:null};}
+function photoSlots(L){
+  const slots=[{key:'living',req:true,label:ft('living')},{key:'dining',req:true,label:ft('dining')}];
+  for(let i=1;i<=L.beds;i++) slots.push({key:'bed'+i,req:true,label:ft('bedroomN')+' '+bd(i)});
+  for(let i=1;i<=L.baths;i++) slots.push({key:'bath'+i,req:true,label:ft('washroomN')+' '+bd(i)});
+  slots.push({key:'kitchen',req:true,label:ft('kitchen')});
+  for(let i=1;i<=L.balconies;i++) slots.push({key:'bal'+i,req:true,label:ft('balconyN')+' '+bd(i)});
+  return slots;
+}
+function fld(label,control){return `<label class="fld"><span>${label} <span class="req">*</span></span>${control}</label>`;}
+function sel(name,opts,cur){return `<select name="${name}" required>${opts.map(o=>`<option value="${o[0]}" ${String(cur)===String(o[0])?'selected':''}>${o[1]}</option>`).join('')}</select>`;}
+function photosHTML(){
+  const L=S.lf; const slots=photoSlots(L); const done=slots.filter(x=>L.photos[x.key]).length;
+  const tile=x=>{const url=L.photos[x.key];
+    return `<div style="border:1px solid var(--line);border-radius:10px;padding:8px;width:170px;max-width:100%">
+      <div><strong>${x.label}</strong> <span class="req">*</span></div>
+      ${url?`<img src="${url}" alt="" style="width:100%;height:76px;object-fit:cover;border-radius:8px;margin:6px 0">`:''}
+      <div class="muted" style="font-size:13px">${url?'✓ '+ft('added'):ft('addPhoto')}</div>
+      <div class="row" style="margin:6px 0 0;gap:6px">
+        <label class="btn small ghost">${ft('camera')}<input type="file" accept="image/*" capture="environment" data-photo="${x.key}" class="hidden"></label>
+        <label class="btn small ghost">${ft('gallery')}<input type="file" accept="image/*" data-photo="${x.key}" class="hidden"></label>
+      </div></div>`;};
+  return `<button type="button" class="btn ghost" data-act="phototog" style="width:100%;text-align:left;margin:10px 0">${ft('photo')} <span class="req">*</span> · ${num(done)}/${num(slots.length)} ${L.open?'▲':'▼'}</button>`
+    +(L.open?`<p class="muted">${ft('photosNote')}</p><div class="row">${slots.map(tile).join('')}</div>`:'');
+}
+function svcHTML(){const L=S.lf;return `<div class="row">${fld(ft('serviceQ'),sel('service',[['',ft('choose')],['no',ft('no')],['yes',ft('yes')]],L.service))}</div>${L.service==='yes'?`<div class="row">${fld(ft('serviceAmt'),`<input name="serviceAmt" type="number" min="1" placeholder="${ft('serviceAmt')}" required>`)}</div><div class="row">${fld(ft('serviceBenefit'),`<textarea name="serviceBenefit" placeholder="${ft('serviceBenefit')}" required></textarea>`)}</div>`:''}`;}
+function billHTML(key,where){
+  const L=S.lf; const yes=L.service==='yes';
+  const wopts=(yes?[['',ft('choose')],['service',ft('inService')]]:[]).concat([['rent',ft('inRent')]]);
+  return `<div class="row">${fld(ft(key),sel(key,[['',ft('choose')],['excluded',ft('excluded')],['included',ft('included')]],L[key]))}${L[key]==='included'?fld(ft('where'),sel(where,wopts,yes?L[where]:'rent')):''}</div>`;
+}
+function billsHTML(){
+  const L=S.lf;
+  return billHTML('water','waterWhere')+billHTML('gas','gasWhere')+`<div class="row">${fld(ft('gasType'),sel('gasType',[['',ft('choose')],['cylinder',ft('cylinder')],['pipeline',ft('pipeline')]],L.gasType))}</div>`;
+}
+function propLine(l){
+  const p=[];
+  if(l.type) p.push(ft(l.type));
+  if(l.baths!==undefined) p.push(num(l.baths)+' '+ft('washrooms'));
+  if(l.balconies!==undefined) p.push(num(l.balconies)+' '+ft('balconies'));
+  if(l.service&&l.service.on) p.push(ft('service')+': '+fmt(l.service.amount));
+  if(l.water) p.push(ft('water')+': '+(l.water.mode==='included'?(l.water.where==='service'?ft('inService'):ft('inRent')):ft('excluded')));
+  if(l.gas) p.push(ft('gas')+': '+(l.gas.mode==='included'?(l.gas.where==='service'?ft('inService'):ft('inRent')):ft('excluded'))+(l.gas.type?' ('+ft(l.gas.type)+')':''));
+  return p.join(' · ');
+}
+function ownHTML(){
+  const L=S.lf;
+  const rels=[['',ft('choose')]].concat(['father','mother','brother','sister','husband','wife','son','daughter','relative','friend','caretaker','other'].map(v=>[v,ft('r_'+v)]));
+  return `<div class="row">${fld(ft('isOwner'),sel('isOwner',[['',ft('choose')],['yes',ft('yes')],['no',ft('no')]],L.isOwner))}</div>${L.isOwner==='no'?`<div class="row">${fld(ft('relation'),sel('relation',rels,L.relation))}</div>`:''}`;
+}
+function rentHTML(){
+  if(!S.lf) S.lf=lfDefault();
+  const L=S.lf;
+  const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++) r.push([i,num(i)]);return r;};
+  const mine=S.mine.filter(l=>l.owner===S.user.name).map(l=>`<div class="item"><strong>${esc(l.title)}</strong> · ${esc(l.area)} · ${fmt(l.rent)}
+     <div class="muted">${l.live?t('verifiedBadge'):t('pending')} · ${esc(callStatus(l).text)}</div>
+     <div class="muted">${esc(propLine(l))}</div><button class="btn small ghost" data-act="editloc" data-id="${l.id}">${ft('changeLoc')}</button>${l.live?`<button class="btn small ghost" data-act="busy" data-id="${l.id}">${callOf(l).busy?ct('busyOff'):ct('busyOn')}</button>`:''}
+     ${l.live?'':`<button class="btn small ghost" data-act="approve" data-id="${l.id}">${t('approveDemo')}</button>`}</div>`).join('')||'<p class="muted">—</p>';
+  return `<button class="btn small ghost" data-act="nav" data-v="browse">${S.lang==='bn'?'ফিরে যান':'← Back'}</button>
+   <h1>${t('rentTitle')}</h1>
+   <form class="panel" data-form="listing" style="max-width:none">
+     <p class="muted"><strong>${ft('legend')}</strong> · ${ft('allRequired')}</p>
+     <h2>${ft('type')}</h2>
+     <div class="row">${fld(ft('type'),sel('type',[['apartment',ft('apartment')],['house',ft('house')]],L.type))}</div>
+     <div id="own">${ownHTML()}</div>
+     <h2>${ft('rooms')}</h2>
+     <div class="row">${fld(ft('bedrooms'),sel('beds',range(1,6),L.beds))}${fld(ft('washrooms'),sel('baths',range(1,5),L.baths))}${fld(ft('balconies'),sel('balconies',range(0,4),L.balconies))}</div>
+     <div id="photos">${photosHTML()}</div>
+     <h2>${ft('details')}</h2>
+     <div class="row">${fld(t('title'),`<input name="title" placeholder="${t('title')}" required>`)}${fld(t('area'),`<input name="area" list="areas" placeholder="${t('area')}" required>`)}</div>
+     <div class="row">${fld(ft('address'),`<input name="address" placeholder="${ft('address')}" required>`)}</div>
+     <h2>${ft('location')} <span class="req">*</span></h2>
+     <p class="muted">${ft('pubNote')}</p>
+     <div class="row"><input id="loc-search" list="areas" placeholder="${ft('searchArea')}"></div>
+     <div id="pickwrap">${pickerHTML()}</div>
+     <div class="row">${fld(t('rentLbl'),`<input name="rent" type="number" min="1000" placeholder="${t('rentLbl')}" required>`)}</div>
+     <div class="row">${fld(t('desc'),`<textarea name="desc" placeholder="${t('desc')}" required></textarea>`)}</div>
+     <div id="svc">${svcHTML()}</div>
+     <h2>${ft('bills')}</h2>
+     <div id="bills">${billsHTML()}</div>
+     <div class="row">${fld(ft('callSched'),sel('callMode',[['',ft('choose')],['any',ft('callAny')],['hours',ft('callHours')]],''))}</div>
+     <div class="row">${fld(ct('from'),`<input type="time" name="from" value="09:00">`)}${fld(ct('until'),`<input type="time" name="to" value="18:00">`)}</div>
+     <div class="row"><span class="muted">${ft('days')} <span class="req">*</span></span>${DAYS.map(d=>`<label><input type="checkbox" name="day" value="${d}" checked style="min-height:auto;flex:0"> ${dn(d)}</label>`).join(' ')}</div>
+     <div class="err" id="err"></div>
+     <button class="btn" type="submit">${ft('submit')}</button>
+   </form>
+   <h2>${t('myListings')}</h2>${mine}`;
+}
+function topHTML(){
+  const langBtn=`<button class="btn small ghost" data-act="lang" data-v="${S.lang==='bn'?'en':'bn'}">${S.lang==='bn'?'English':'বাংলা'}</button>`;
+  const rent=`<button class="btn small" data-act="rent">${t('rentOut')}</button>`;
+  const acct=S.user?`<button class="btn small ghost" data-act="logout">${t('logout')}</button>`
+     :`<button class="btn small ghost" data-act="nav" data-v="login">${t('login')}</button>`;
+  return langBtn+rent+acct;
+}
+
+function render(){
+  const top=document.getElementById('top');
+  document.querySelector('.logo').textContent=S.lang==='bn'?'বাসাবাড়ি':'Basha Bari';
+  const app=document.getElementById('app');
+  document.getElementById('demo-note').textContent=S.lang==='bn'
+    ?'ডেমো। ব্যবহারকারী, তালিকা ও বার্তা সার্ভারে সংরক্ষিত হয় না।'
+    :'Demo only. Accounts, listings and messages are not saved to a server.';
+  if(!S.lang){
+    top.innerHTML='';
+    app.innerHTML=`<div class="panel"><h1>Basha Bari</h1><p class="muted">Choose your language / ভাষা বেছে নিন</p>
+      <div class="row"><button class="btn" data-act="lang" data-v="en">English</button><button class="btn" data-act="lang" data-v="bn">বাংলা</button></div></div>`;
+    return;
+  }
+  top.innerHTML=topHTML();
+  let html='';
+  if(S.page==='landing') html=landingHTML();
+  else if(S.page==='browse') html=browseHTML();
+  else if(S.page==='detail') html=detailHTML();
+  else if(S.page==='login') html=authHTML('login');
+  else if(S.page==='signup') html=authHTML('signup');
+  else if(S.page==='verify') html=verifyHTML();
+  else if(S.page==='rent') html=rentHTML();
+  app.innerHTML=html;
+  const b=document.getElementById('app');
+  if(S.page==='browse'){
+    /* grid already rendered */
+  }
+}
+
+function go(page){S.page=page;render();}
+
+function requireAccess(kind,id){
+  if(!S.user){S.ret={kind,id};S.page='login';return render();}
+  if(!S.user.verified){S.ret={kind,id};S.page='verify';return render();}
+  if(kind==='rent'){S.page='rent';return render();}
+  if(kind==='call') return openCall(id);
+  if(kind==='book') return openBook(id);
+  if(kind==='chat') return openChat(id);
+}
+function afterAuth(){
+  if(S.user&&S.ret&&S.ret.kind==='detail'){const id=S.ret.id; S.ret=null; S.selId=id; S.page='detail'; return render();}
+  S.ret=null;
+  S.page=S.user&&S.user.verified?'browse':'verify';
+  render();
+}
+
+function findListing(id){return seed.find(l=>l.id===id)||S.mine.find(l=>l.id===id);}
+function openCall(id){
+  const l=findListing(id); if(!l) return;
+  const s=callStatus(l);
+  const body=document.getElementById('dlg-body');
+  if(!s.ok){
+    body.innerHTML=`<h2>${esc(l.title)}</h2><p>${ct('closed')}</p><p class="muted">${esc(s.text)}</p><button class="btn" data-act="close">${ct('ok')}</button>`;
+  } else {
+    body.innerHTML=`<h2>${ct('callBtn')} · ${esc(l.title)}</h2><p>${ct('connecting')}</p><p class="muted">${ct('privacy')}</p><button class="btn" data-act="close">${ct('hangup')}</button>`;
+  }
+  document.getElementById('dlg').showModal();
+}
+
+function openBook(id){
+  const l=findListing(id); if(!l) return;
+  S.dlgId=id;
+  document.getElementById('dlg-body').innerHTML=`<h2>${t('bookTitle')}: ${esc(l.title)} · ${esc(l.area)}</h2>
+   <form data-form="book">
+     <div class="row"><input name="date" type="date" required><select name="time">
+       <option>10:00 AM</option><option>12:00 PM</option><option>3:00 PM</option><option>5:00 PM</option></select></div>
+     <div class="err" id="err"></div>
+     <div class="row"><button class="btn" type="submit">${t('send')}</button><button class="btn ghost" type="button" data-act="close">${t('cancel')}</button></div>
+   </form>`;
+  document.getElementById('dlg').showModal();
+}
+
+function renderChat(id){
+  const l=findListing(id);
+  const msgs=(S.chats[id]||[]).map(m=>`<div class="msg ${m.me?'me':''}">${esc(m.text)}</div>`).join('');
+  document.getElementById('dlg-body').innerHTML=`<h2>${t('chatTitle')}</h2><div class="muted">${esc(l.title)} · ${esc(l.area)}</div>
+   <div class="msgs" id="msgs">${msgs}</div>
+   <form data-form="chat" class="row"><input name="text" placeholder="${t('typeMsg')}" autocomplete="off" required><button class="btn small" type="submit">${t('send')}</button><button class="btn small ghost" type="button" data-act="close">${t('cancel')}</button></form>`;
+}
+function openChat(id){S.chatId=id;renderChat(id);document.getElementById('dlg').showModal();}
+
+function setErr(msg){const e=document.getElementById('err'); if(e) e.textContent=msg||'';}
+
+document.addEventListener('click',e=>{
+  if(mapClick(e)) return;
+  const el=e.target.closest('[data-act]'); if(!el) return;
+  const a=el.dataset.act;
+  if(a==='close'){document.getElementById('dlg').close();return;}
+  if(a==='lang'){S.lang=el.dataset.v;return render();}
+  if(a==='nav'){S.page=el.dataset.v;return render();}
+  if(a==='rent'){return requireAccess('rent');}
+  if(a==='logout'){S.user=null;S.ret=null;S.page='browse';return render();}
+  if(a==='gate'){return requireAccess(el.dataset.kind,Number(el.dataset.id));}
+  if(a==='face'){if(S.user){S.user.faceOK=true;} return render();}
+  if(a==='busy'){const l=S.mine.find(x=>x.id===Number(el.dataset.id)); if(l){const c=callOf(l); c.busy=!c.busy; l.call=c;} return render();}
+  if(a==='phototog'){S.lf.open=!S.lf.open; document.getElementById('photos').innerHTML=photosHTML(); return;}
+  if(a==='detail'){S.selId=Number(el.dataset.id); S.page='detail'; return render();}
+  if(a==='detailauth'){S.ret={kind:'detail',id:S.selId}; S.page=el.dataset.v; return render();}
+  if(mapAct(a,el)) return;
+  if(a==='approve'){const l=S.mine.find(x=>x.id===Number(el.dataset.id)); if(l){l.live=true;} return render();}
+});
+
+document.addEventListener('submit',e=>{
+  const f=e.target.closest('[data-form]'); if(!f) return;
+  e.preventDefault();
+  const fd=new FormData(f), k=f.dataset.form;
+
+  if(k==='signup'){
+    const dob=new Date(fd.get('dob'));
+    if(isNaN(dob)) return setErr(t('err18'));
+    const age=(Date.now()-dob)/(365.25*24*3600*1000);
+    if(age<18) return setErr(t('under18'));
+    if(!PH.test(fd.get('phone'))) return setErr('01XXXXXXXXX');
+    if(S.users.some(u=>u.phone===fd.get('phone'))) return setErr(t('phoneTaken'));
+    const u={name:fd.get('name'),phone:fd.get('phone'),pass:fd.get('pass'),phoneOK:false,idOK:false,faceOK:false,verified:false};
+    S.users.push(u); S.user=u; S.page='verify'; return render();
+  }
+  if(k==='login'){
+    const u=S.users.find(x=>x.phone===fd.get('phone')&&x.pass===fd.get('pass'));
+    if(!u) return setErr(t('badLogin'));
+    S.user=u; return afterAuth();
+  }
+  if(k==='otp'){
+    if(fd.get('code')!=='1234') return setErr('1234');
+    S.user.phoneOK=true; return render();
+  }
+  if(k==='nid'){
+    if(!NID.test(fd.get('nid'))) return setErr('10, 13 or 17 digits');
+    S.user.nidOK=true; return render();
+  }
+  if(k==='idcheck'){
+    if(!S.user.faceOK) return setErr(t('face'));
+    S.user.idOK=true; S.user.verified=true; return afterAuth();
+  }
+  if(k==='listing'){
+    const L=S.lf;
+    if(!L.pin) return setErr(ft('errLoc'));
+    if(L.isOwner===''){return setErr(ft('errChoose'));}
+    if(L.isOwner==='no'&&L.relation==='') return setErr(ft('errRelation'));
+    if(L.service===''||L.water===''||L.gas===''||L.gasType==='') return setErr(ft('errChoose'));
+    if(L.service==='yes'&&((L.water==='included'&&L.waterWhere==='')||(L.gas==='included'&&L.gasWhere===''))) return setErr(ft('errWhere'));
+    const mode=fd.get('callMode');
+    if(!mode) return setErr(ft('errChoose'));
+    const days=fd.getAll('day');
+    if(mode==='hours'&&!days.length) return setErr(ft('errDays'));
+    const missing=photoSlots(L).filter(x=>!L.photos[x.key]);
+    if(missing.length) return setErr(ft('errPhotos')+': '+missing.map(x=>x.label).join(', '));
+    const rent=Number(fd.get('rent'));
+    if(rent<1000) return setErr(ft('errRent'));
+    const withService=L.service==='yes';
+    S.mine.push({id:Date.now(),title:fd.get('title'),area:fd.get('area'),address:fd.get('address'),rent,desc:fd.get('desc'),
+      type:L.type,ownership:{yes:L.isOwner==='yes',relation:L.isOwner==='no'?L.relation:''},pin:L.pin,beds:L.beds,baths:L.baths,balconies:L.balconies,photoCount:Object.keys(L.photos).length,
+      service:{on:withService,amount:Number(fd.get('serviceAmt'))||0,benefit:fd.get('serviceBenefit')||''},
+      water:{mode:L.water,where:withService?L.waterWhere:'rent'},
+      gas:{mode:L.gas,type:L.gasType,where:withService?L.gasWhere:'rent'},
+      img:L.type==='house'?'🏠':'🏢',phone:S.user.phone,owner:S.user.name,live:false,
+      call:{enabled:mode==='hours',from:fd.get('from')||'09:00',to:fd.get('to')||'18:00',days:mode==='hours'?days:[],busy:false}});
+    S.lf=lfDefault(); return render();
+  }
+  if(k==='book'){
+    const id=S.dlgId, l=findListing(id);
+    if(!fd.get('date')) return setErr(t('date'));
+    S.bookings.push({listing:l.title,date:fd.get('date'),time:fd.get('time')});
+    document.getElementById('dlg-body').innerHTML=`<h2 class="ok">${t('sent')}</h2><p>${esc(fd.get('date'))} · ${esc(fd.get('time'))}</p><button class="btn" data-act="close">OK</button>`;
+    return;
+  }
+  if(k==='chat'){
+    const id=S.chatId;
+    (S.chats[id]=S.chats[id]||[]).push({me:true,text:fd.get('text')});
+    renderChat(id);
+    setTimeout(()=>{
+      if(S.chatId!==id||!document.getElementById('dlg').open) return;
+      S.chats[id].push({me:false,text:t('demoReply')}); renderChat(id);
+    },700);
+  }
+});
+
+document.addEventListener('input',e=>{
+  if(e.target.id==='f-area'){S.filter.area=e.target.value; const g=document.getElementById('grid'); if(g) g.innerHTML=gridHTML();}
+});
+document.addEventListener('change',e=>{
+  if(['f-max','f-beds'].includes(e.target.id)){
+    S.filter[e.target.id==='f-max'?'max':'beds']=e.target.value;
+    const g=document.getElementById('grid'); if(g) g.innerHTML=gridHTML();
+  }
+});
+
+document.addEventListener('change',e=>{
+  const el=e.target; if(!el.closest) return;
+  if(el.matches('[data-photo]')){const f=el.files&&el.files[0]; if(!f) return; S.lf.photos[el.dataset.photo]=URL.createObjectURL(f); document.getElementById('photos').innerHTML=photosHTML(); return;}
+  if(!el.closest('form[data-form="listing"]')) return;
+  const n=el.name;
+  if(n==='isOwner'){S.lf.isOwner=el.value; document.getElementById('own').innerHTML=ownHTML(); return;}
+  if(n==='relation'){S.lf.relation=el.value; return;}
+  if(['beds','baths','balconies'].includes(n)){S.lf[n]=Number(el.value); document.getElementById('photos').innerHTML=photosHTML(); return;}
+  if(n==='type'){S.lf.type=el.value; return;}
+  if(n==='service'){S.lf.service=el.value; document.getElementById('svc').innerHTML=svcHTML(); document.getElementById('bills').innerHTML=billsHTML(); return;}
+  if(['water','gas','waterWhere','gasWhere','gasType'].includes(n)){S.lf[n]=el.value; document.getElementById('bills').innerHTML=billsHTML();}
+});
+const AREAS={'Mirpur':[250,250],'Uttara':[300,90],'Dhanmondi':[420,430],'Bashundhara R/A':[640,260],'Mohammadpur':[330,440],'Gulshan':[600,420],'Badda':[700,520]};
+const MVS={}, MO={}; let DRAG=false;
+function areaOf(name){return AREAS[name]||[500,400];}
+function snap(p){return {x:Math.round(p.x/40)*40+20,y:Math.round(p.y/40)*40+20};}
+function pubPos(l){ if(l.pin) return snap(l.pin); const c=areaOf(l.area); return snap({x:c[0]+((l.id*37)%60)-30,y:c[1]+((l.id*53)%60)-30}); }
+function nearArea(p){let best='',bestD=1e12;for(const k in AREAS){const c=AREAS[k];const d=(c[0]-p.x)**2+(c[1]-p.y)**2;if(d<bestD){bestD=d;best=k;}}return best;}
+function pinText(p){return ft('pinNear')+': '+nearArea(p);}
+function mapSVG(o){
+  const id=o.id, markers=o.markers||[], pin=o.pin||null, pick=o.pick||null, h=o.h||340;
+  const m=MVS[id]||{z:1,tx:0,ty:0};
+  const areas=Object.keys(AREAS).map(k=>`<circle cx="${AREAS[k][0]}" cy="${AREAS[k][1]}" r="80" fill="#fff" fill-opacity=".35"/><text x="${AREAS[k][0]}" y="${AREAS[k][1]+115}" text-anchor="middle" font-size="34" fill="#5a5a52">${k}</text>`).join('');
+  const mk=markers.map(x=>`<g data-mark="${x.id}" data-map="${id}" style="cursor:pointer"><rect x="${x.x-50}" y="${x.y-26}" width="100" height="50" rx="14" fill="#0f7a5a"/><text x="${x.x}" y="${x.y+8}" text-anchor="middle" font-size="28" fill="#fff" font-weight="700">${x.label}</text></g>`).join('');
+  const pn=pin?`<circle cx="${pin.x}" cy="${pin.y}" r="22" fill="#c0392b" stroke="#fff" stroke-width="6"/>`:'';
+  return `<div id="mp-${id}" class="mapbox" data-map="${id}"${pick?` data-pick="${pick}"`:''} style="position:relative;height:${h}px;overflow:hidden;border:1px solid var(--line);border-radius:12px;touch-action:none;cursor:${pick?'crosshair':'grab'}">
+    <svg viewBox="0 0 1000 800" preserveAspectRatio="none" width="100%" height="100%" style="display:block">
+      <rect width="1000" height="800" fill="#e4ecdf"/>
+      <g class="mv" transform="translate(${m.tx} ${m.ty}) scale(${m.z})">
+        <path d="M-100 560 C200 520 300 620 500 600 S800 540 1100 610" stroke="#a9cdea" stroke-width="44" fill="none"/>
+        ${areas}${mk}${pn}
+      </g></svg>
+    <div style="position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px;z-index:2">
+      <button type="button" class="btn small" data-act="zoom" data-map="${id}" data-f="1.4">+</button>
+      <button type="button" class="btn small" data-act="zoom" data-map="${id}" data-f="0.7">−</button>
+      <button type="button" class="btn small ghost" data-act="zoom" data-map="${id}" data-f="reset">⟲</button>
+    </div></div>`;
+}
+function redrawMap(id,o){MO[id]=o; const el=document.getElementById('mp-'+id); if(el) el.outerHTML=mapSVG(o);}
+function previewHTML(l){
+  if(!l) return '';
+  return `<div class="card" style="max-width:360px"><div class="photo" style="height:90px;font-size:36px">${l.img}</div><div class="body">
+    <div class="price">${fmt(l.rent)}<span class="muted">/${dl('month','মাস')}</span></div>
+    <div>${esc(l.title)} · ${esc(l.area)}</div>
+    <div class="actions"><button class="btn small" data-act="detail" data-id="${l.id}">${ft('openListing')}</button></div></div></div>`;
+}
+function browseMapHTML(){
+  const markers=visibleListings().map(l=>{const p=pubPos(l);return {id:l.id,x:p.x,y:p.y,label:bd(Math.round(l.rent/1000))+'k'};});
+  MO.browse={id:'browse',markers,h:440};
+  return mapSVG(MO.browse)+`<div id="prev-browse" style="margin-top:12px">${S.mapSel?previewHTML(findListing(S.mapSel)):''}</div>`;
+}
+function refreshMap(){const w=document.getElementById('mapwrap'); if(w) w.innerHTML=browseMapHTML();}
+function pickerHTML(){
+  const L=S.lf; MO.lf={id:'lf',markers:[],pin:L.pin,pick:'lf',h:300};
+  return mapSVG(MO.lf)+`<p id="pinlabel" class="muted">${L.pin?pinText(L.pin):ft('tapMap')}</p>`;
+}
+function mapAct(a,el){
+  if(a==='view'){S.view=el.dataset.v; render(); return true;}
+  if(a==='zoom'){
+    const id=el.dataset.map, m=MVS[id]||{z:1,tx:0,ty:0}, f=el.dataset.f;
+    if(f==='reset'){MVS[id]={z:1,tx:0,ty:0};}
+    else{const z=Math.min(6,Math.max(1,m.z*Number(f))), k=z/m.z; MVS[id]={z,tx:500-(500-m.tx)*k,ty:400-(400-m.ty)*k};}
+    redrawMap(id,MO[id]); return true;
+  }
+  if(a==='viewmap'){
+    const l=findListing(Number(el.dataset.id)), p=pubPos(l);
+    MO.dlgmap={id:'dlgmap',markers:[{id:l.id,x:p.x,y:p.y,label:bd(Math.round(l.rent/1000))+'k'}],h:360};
+    MVS.dlgmap={z:2,tx:500-p.x*2,ty:400-p.y*2};
+    document.getElementById('dlg-body').innerHTML=`<h2>${ft('location')}</h2><p class="muted">${ft('approxLoc')}: ${esc(l.area)}</p>${mapSVG(MO.dlgmap)}<div class="row"><button class="btn ghost" data-act="close">${dl('Close','বন্ধ করুন')}</button></div>`;
+    document.getElementById('dlg').showModal(); return true;
+  }
+  if(a==='editloc'){
+    const l=findListing(Number(el.dataset.id)); S.editId=l.id;
+    S.editPin=l.pin||{x:areaOf(l.area)[0],y:areaOf(l.area)[1]};
+    MO.edit={id:'edit',markers:[],pin:S.editPin,pick:'edit',h:320}; MVS.edit={z:1,tx:0,ty:0};
+    document.getElementById('dlg-body').innerHTML=`<h2>${ft('changeLoc')}</h2>${mapSVG(MO.edit)}<p id="pinlabel2" class="muted">${pinText(S.editPin)}</p><div class="row"><button class="btn" data-act="saveloc">${ft('saveLoc')}</button><button class="btn ghost" data-act="close">${dl('Close','বন্ধ করুন')}</button></div>`;
+    document.getElementById('dlg').showModal(); return true;
+  }
+  if(a==='saveloc'){const l=S.mine.find(x=>x.id===S.editId); if(l) l.pin=S.editPin; document.getElementById('dlg').close(); render(); return true;}
+  return false;
+}
+function mapClick(e){
+  if(e.target.closest&&e.target.closest('[data-act]')) return false;
+  if(DRAG) return true;
+  const mk=e.target.closest&&e.target.closest('[data-mark]');
+  if(mk){S.mapSel=Number(mk.dataset.mark); const p=document.getElementById('prev-'+mk.dataset.map); if(p) p.innerHTML=previewHTML(findListing(S.mapSel)); return true;}
+  const pk=e.target.closest&&e.target.closest('[data-pick]');
+  if(pk){
+    const id=pk.dataset.map, r=pk.querySelector('svg').getBoundingClientRect(), m=MVS[id]||{z:1,tx:0,ty:0};
+    const pt={x:Math.round(((e.clientX-r.left)*1000/r.width-m.tx)/m.z), y:Math.round(((e.clientY-r.top)*800/r.height-m.ty)/m.z)};
+    if(id==='lf'){S.lf.pin=pt; redrawMap('lf',{...MO.lf,pin:pt}); const lb=document.getElementById('pinlabel'); if(lb) lb.textContent=pinText(pt);}
+    if(id==='edit'){S.editPin=pt; redrawMap('edit',{...MO.edit,pin:pt}); const lb=document.getElementById('pinlabel2'); if(lb) lb.textContent=pinText(pt);}
+    return true;
+  }
+  return false;
+}
+document.addEventListener('pointerdown',()=>{DRAG=false;});
+document.addEventListener('pointermove',e=>{
+  if(!(e.buttons&1)) return;
+  if(Math.abs(e.movementX)+Math.abs(e.movementY)<3) return;
+  const c=e.target.closest&&e.target.closest('.mapbox'); if(!c) return;
+  DRAG=true; const id=c.dataset.map, r=c.querySelector('svg').getBoundingClientRect();
+  const m=MVS[id]||{z:1,tx:0,ty:0};
+  m.tx+=e.movementX*1000/r.width; m.ty+=e.movementY*800/r.height; MVS[id]=m;
+  const g=c.querySelector('g.mv'); if(g) g.setAttribute('transform',`translate(${m.tx} ${m.ty}) scale(${m.z})`);
+});
+document.addEventListener('input',e=>{
+  if(e.target.id!=='loc-search') return;
+  const q=e.target.value.trim().toLowerCase(); if(q.length<2||!MO.lf) return;
+  const k=Object.keys(AREAS).find(a=>a.toLowerCase().includes(q)); if(!k) return;
+  const pt={x:AREAS[k][0],y:AREAS[k][1]}; S.lf.pin=pt;
+  MVS.lf={z:2,tx:500-pt.x*2,ty:400-pt.y*2};
+  redrawMap('lf',{...MO.lf,pin:pt});
+  const lb=document.getElementById('pinlabel'); if(lb) lb.textContent=pinText(pt);
+});
+render();
+</script>
+</body>
+</html>
